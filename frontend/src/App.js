@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
-const API = "http://localhost:5000/api/auth";
+const API = "https://login-signup-j4u0.onrender.com/api/auth";
+
 
 function App() {
   const [mode, setMode] = useState("login");
