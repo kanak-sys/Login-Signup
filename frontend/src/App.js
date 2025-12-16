@@ -4,19 +4,21 @@ import "./App.css";
 
 const API = "https://login-signup-j4u0.onrender.com/api/auth";
 
-
 function App() {
-  const [mode, setMode] = useState("login");
-  const [message, setMessage] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [view, setView] = useState("auth"); // auth | dashboard
+  const [mode, setMode] = useState("login"); // login | signup
 
   const [email, setEmail] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState(""); // success | error
+
+  // EMAIL REGEX (.com and .in only)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.(com|in)$/;
+  const emailValid = emailRegex.test(email);
   const emailsMatch = email === confirmEmail;
 
   const passwordLength = password.length >= 8;
@@ -25,71 +27,90 @@ function App() {
   const passwordSpecial = /[@$!%*#?&]/.test(password);
   const passwordsMatch = password === confirmPassword;
 
+  // ================= SIGNUP =================
   const signup = async () => {
-    if (!emailsMatch || !passwordsMatch) {
-      setMessage("Emails or passwords do not match");
-      setIsSuccess(false);
+    if (!emailValid || !emailsMatch || !passwordsMatch) {
+      setMessage("Please fix the highlighted validation errors.");
+      setMessageType("error");
       return;
     }
 
     try {
-      const res = await axios.post(`${API}/signup`, { email, password });
-      setMessage("Signup successful. Please login.");
-      setIsSuccess(true);
-      setMode("login");
+      await axios.post(`${API}/signup`, { email, password });
+
+      setMessage("Account created successfully");
+      setMessageType("success");
+      setView("dashboard");
     } catch (err) {
-      setMessage(err.response.data.message);
-      setIsSuccess(false);
+      setMessage(err.response?.data?.message || "Signup failed");
+      setMessageType("error");
     }
   };
 
+  // ================= LOGIN =================
   const login = async () => {
     try {
       const res = await axios.post(`${API}/login`, { email, password });
       localStorage.setItem("token", res.data.token);
-      setLoggedIn(true);
-      setMessage("Login successful");
-      setIsSuccess(true);
+
+      setMessage("");
+      setMessageType("");
+      setView("dashboard");
     } catch (err) {
-      setMessage(err.response.data.message);
-      setIsSuccess(false);
+      setMessage("Invalid credentials. Please check email or password.");
+      setMessageType("error");
     }
   };
 
   const logout = () => {
     localStorage.removeItem("token");
-    setLoggedIn(false);
+    setView("auth");
+    setMode("login");
     setEmail("");
     setPassword("");
     setMessage("");
   };
 
-  // ✅ SUCCESS SCREEN
-  if (loggedIn) {
+  // ================= DASHBOARD =================
+  if (view === "dashboard") {
     return (
       <div className="container">
-        <div className="card success-card">
-          <h2>🎉 Welcome!</h2>
-          <p>You are successfully logged in.</p>
+        <div className="card dashboard">
+          <h2>Welcome To Dashboard</h2>
+
+          {message && (
+            <div className={`msg ${messageType}`}>
+              {message}
+            </div>
+          )}
+
+          <p>Welcome! You are logged in.</p>
+
+          <div className="stats">
+            <div className="stat-box">Status: Active</div>
+            <div className="stat-box">Role: User</div>
+          </div>
+
           <button onClick={logout}>Logout</button>
         </div>
       </div>
     );
   }
 
+  // ================= AUTH =================
   return (
     <div className="container">
       <div className="card">
         <h2>{mode === "login" ? "Login" : "Signup"}</h2>
 
         {message && (
-          <div className={isSuccess ? "msg success" : "msg error"}>
+          <div className={`msg ${messageType}`}>
             {message}
           </div>
         )}
 
         <input
-          placeholder="Email"
+          placeholder="Email (.com or .in)"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -120,13 +141,23 @@ function App() {
 
         {mode === "signup" && (
           <div className="tips">
-            <p className={emailValid ? "valid" : "invalid"}>• Valid email</p>
-            <p className={emailsMatch ? "valid" : "invalid"}>• Emails match</p>
-            <p className={passwordLength ? "valid" : "invalid"}>• 8+ chars</p>
-            <p className={passwordLetter ? "valid" : "invalid"}>• Letter</p>
-            <p className={passwordNumber ? "valid" : "invalid"}>• Number</p>
+            <p className={emailValid ? "valid" : "invalid"}>
+              • Email must end with .com or .in
+            </p>
+            <p className={emailsMatch ? "valid" : "invalid"}>
+              • Emails match
+            </p>
+            <p className={passwordLength ? "valid" : "invalid"}>
+              • Minimum 8 characters
+            </p>
+            <p className={passwordLetter ? "valid" : "invalid"}>
+              • At least one letter
+            </p>
+            <p className={passwordNumber ? "valid" : "invalid"}>
+              • At least one number
+            </p>
             <p className={passwordSpecial ? "valid" : "invalid"}>
-              • Special char
+              • At least one special character
             </p>
             <p className={passwordsMatch ? "valid" : "invalid"}>
               • Passwords match
